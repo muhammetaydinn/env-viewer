@@ -87,6 +87,9 @@ class EnvEditorProvider implements vscode.CustomTextEditorProvider {
             padding: 5px;
             min-width: 150px;
         }
+        input:focus {
+            outline: 1px solid var(--vscode-focusBorder);
+        }
         button {
             background-color: var(--vscode-button-background);
             color: var(--vscode-button-foreground);
@@ -134,11 +137,15 @@ class EnvEditorProvider implements vscode.CustomTextEditorProvider {
                 div.className = 'env-item';
                 div.innerHTML = \`
                     <input type="text" placeholder="Key" value="\${envVar.key}" 
-                           onchange="updateEnvVar(\${index}, 'key', this.value)">
+                           tabindex="\${index * 2 + 1}"
+                           onchange="updateEnvVar(\${index}, 'key', this.value)"
+                           onkeydown="handleKeyDown(event, \${index}, 'key')">
                     <span>=</span>
                     <input type="text" placeholder="Value" value="\${envVar.value}" 
-                           onchange="updateEnvVar(\${index}, 'value', this.value)">
-                    <button class="delete-button" onclick="deleteEnvVar(\${index})">Delete</button>
+                           tabindex="\${index * 2 + 2}"
+                           onchange="updateEnvVar(\${index}, 'value', this.value)"
+                           onkeydown="handleKeyDown(event, \${index}, 'value')">
+                    <button class="delete-button" onclick="deleteEnvVar(\${index})" tabindex="-1">Delete</button>
                 \`;
                 container.appendChild(div);
             });
@@ -152,12 +159,52 @@ class EnvEditorProvider implements vscode.CustomTextEditorProvider {
         function addEnvVar() {
             envVars.push({ key: '', value: '' });
             renderEnvVars();
+            // Yeni eklenen key input'una focus
+            setTimeout(() => {
+                const newKeyInput = document.querySelector(\`input[tabindex="\${(envVars.length - 1) * 2 + 1}"]\`);
+                if (newKeyInput) newKeyInput.focus();
+            }, 50);
         }
 
         function deleteEnvVar(index) {
             envVars.splice(index, 1);
             renderEnvVars();
             saveChanges();
+        }
+
+        function handleKeyDown(event, index, field) {
+            if (event.key === 'Tab') {
+                if (field === 'key' && !event.shiftKey) {
+                    // Key'den Value'ya geçiş
+                    event.preventDefault();
+                    const valueInput = document.querySelector(\`input[tabindex="\${index * 2 + 2}"]\`);
+                    if (valueInput) valueInput.focus();
+                } else if (field === 'value' && !event.shiftKey) {
+                    // Value'dan sonraki Key'e geçiş
+                    event.preventDefault();
+                    const nextKeyInput = document.querySelector(\`input[tabindex="\${(index + 1) * 2 + 1}"]\`);
+                    if (nextKeyInput) {
+                        nextKeyInput.focus();
+                    } else {
+                        // Son satırsa yeni satır ekle
+                        addEnvVar();
+                    }
+                } else if (event.shiftKey) {
+                    // Shift+Tab ile geriye gitme
+                    event.preventDefault();
+                    if (field === 'value') {
+                        const keyInput = document.querySelector(\`input[tabindex="\${index * 2 + 1}"]\`);
+                        if (keyInput) keyInput.focus();
+                    } else if (field === 'key' && index > 0) {
+                        const prevValueInput = document.querySelector(\`input[tabindex="\${(index - 1) * 2 + 2}"]\`);
+                        if (prevValueInput) prevValueInput.focus();
+                    }
+                }
+            } else if (event.key === 'Enter') {
+                // Enter ile yeni satır ekleme
+                event.preventDefault();
+                addEnvVar();
+            }
         }
 
         function saveChanges() {
