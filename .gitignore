@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+
+# VSCode extension build
+out/
+
+# VSCode settings
+.vscode/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# MacOS
+.DS_Store
+
+# Env
+.env*
