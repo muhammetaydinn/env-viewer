@@ -4,6 +4,7 @@
   "description": "Simple .env file editor",
   "version": "0.0.1",
   "publisher": "aydindie",
+  "icon": "images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/muhammetaydinn/env-viewer"
